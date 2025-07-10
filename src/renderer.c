@@ -8,20 +8,17 @@
 #include "drm-common.h"
 #include "renderer.h"
 
-int render_frame(struct drm *drm) {
-    // 2) GBM device
-    struct gbm_device *gbm = gbm_create_device(drm->fd);
-    if (!gbm) { perror("gbm_create_device"); return -1; }
+int setup_rendering(struct drm *drm, struct render_context *ctx) {
+    ctx->gbm = gbm_create_device(drm->fd);
+    if (!ctx->gbm) { perror("gbm_create_device"); return -1; }
 
-    // 3) EGL init on GBM
-    EGLDisplay dpy = eglGetDisplay((EGLNativeDisplayType)gbm);
-    if (dpy == EGL_NO_DISPLAY || !eglInitialize(dpy, NULL, NULL)) {
+    ctx->dpy = eglGetDisplay((EGLNativeDisplayType)ctx->gbm);
+    if (ctx->dpy == EGL_NO_DISPLAY || !eglInitialize(ctx->dpy, NULL, NULL)) {
         fprintf(stderr, "eglInitialize failed\n");
         return -1;
     }
     eglBindAPI(EGL_OPENGL_ES_API);
 
-    // 4) Choose config
     const EGLint cfg_attribs[] = {
         EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
         EGL_RED_SIZE,        8,
@@ -31,74 +28,49 @@ int render_frame(struct drm *drm) {
         EGL_NONE
     };
     EGLConfig cfg; EGLint ncfg;
-    if (!eglChooseConfig(dpy, cfg_attribs, &cfg, 1, &ncfg) || ncfg == 0) {
+    if (!eglChooseConfig(ctx->dpy, cfg_attribs, &cfg, 1, &ncfg) || ncfg == 0) {
         fprintf(stderr, "eglChooseConfig failed\n");
         return -1;
     }
 
-    // 5) Get native visual ID (format) for GBM
     EGLint vid;
-    eglGetConfigAttrib(dpy, cfg, EGL_NATIVE_VISUAL_ID, &vid);
+    eglGetConfigAttrib(ctx->dpy, cfg, EGL_NATIVE_VISUAL_ID, &vid);
 
-    // 6) Create GBM surface with that format
-    struct gbm_surface *gs = gbm_surface_create(
-        gbm,
+    ctx->gs = gbm_surface_create(
+        ctx->gbm,
         drm->mode->hdisplay, drm->mode->vdisplay,
-        vid,                          // ⇐ EGL_NATIVE_VISUAL_ID
+        vid,
         GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING
     );
-    if (!gs) {
+    if (!ctx->gs) {
         fprintf(stderr, "gbm_surface_create failed\n");
         return -1;
     }
 
-    // 7) Wrap GBM surface as EGL window surface
-    EGLSurface surf = eglCreateWindowSurface(dpy, cfg, gs, NULL);
-    if (surf == EGL_NO_SURFACE) {
+    ctx->surf = eglCreateWindowSurface(ctx->dpy, cfg, ctx->gs, NULL);
+    if (ctx->surf == EGL_NO_SURFACE) {
         fprintf(stderr, "eglCreateWindowSurface failed: 0x%04X\n", eglGetError());
         return -1;
     }
 
-    // 8) Create & bind ES2 context
     const EGLint ctx_attribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
-    EGLContext ctx = eglCreateContext(dpy, cfg, EGL_NO_CONTEXT, ctx_attribs);
-    if (ctx == EGL_NO_CONTEXT) {
+    ctx->ctx = eglCreateContext(ctx->dpy, cfg, EGL_NO_CONTEXT, ctx_attribs);
+    if (ctx->ctx == EGL_NO_CONTEXT) {
         fprintf(stderr, "eglCreateContext failed: 0x%04X\n", eglGetError());
         return -1;
     }
-    if (!eglMakeCurrent(dpy, surf, surf, ctx)) {
+    if (!eglMakeCurrent(ctx->dpy, ctx->surf, ctx->surf, ctx->ctx)) {
         fprintf(stderr, "eglMakeCurrent failed: 0x%04X\n", eglGetError());
         return -1;
     }
 
-    // 9) Render a single red frame
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    eglSwapBuffers(dpy, surf);
-
-    // 10) Scanout: ilk frame’i CRTC’ye set et
-    struct gbm_bo *bo = gbm_surface_lock_front_buffer(gs);
-    struct drm_fb *fb = drm_fb_get_from_bo(bo);
-    if (!fb) {
-        fprintf(stderr, "drm_fb_get_from_bo failed\n");
-        return -1;
-    }
-    drmModeSetCrtc(drm->fd,
-                   drm->crtc_id,
-                   fb->fb_id,
-                   0, 0,
-                   &drm->connector_id, 1,
-                   drm->mode);
-    gbm_surface_release_buffer(gs, bo);
-
-    // 11) Görmek için 5 saniye bekle
-    sleep(5);
-
-    // 12) Temizlik
-    eglDestroySurface(dpy, surf);
-    gbm_surface_destroy(gs);
-    eglDestroyContext(dpy, ctx);
-    eglTerminate(dpy);
-    gbm_device_destroy(gbm);
     return 0;
+}
+
+void cleanup_rendering(struct render_context *ctx) {
+    eglDestroySurface(ctx->dpy, ctx->surf);
+    gbm_surface_destroy(ctx->gs);
+    eglDestroyContext(ctx->dpy, ctx->ctx);
+    eglTerminate(ctx->dpy);
+    gbm_device_destroy(ctx->gbm);
 }

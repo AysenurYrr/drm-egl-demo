@@ -174,6 +174,7 @@ int init_drm(struct drm *drm, const char *device)
 		return -1;
 	}
 
+	// Get resources
 	resources = drmModeGetResources(drm->fd);
 	if (!resources) {
 		printf("drmModeGetResources failed: %s\n", strerror(errno));
