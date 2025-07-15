@@ -23,7 +23,7 @@ $(BUILD_DIR)/drm-common.o: $(SRC_DIR)/drm/drm-common.c | $(BUILD_DIR)
 $(BUILD_DIR)/common.o: $(SRC_DIR)/common/common.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/triangle.o: $(SRC_DIR)/app/01_triangle/triangle.c | $(BUILD_DIR)
+$(BUILD_DIR)/triangle.o: $(SRC_DIR)/app/04_dual_texture_renderer/triangle.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/shader_utils.o: $(SRC_DIR)/common/shader_utils/shader_utils.c | $(BUILD_DIR)

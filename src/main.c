@@ -15,6 +15,9 @@
 #include "renderer.h"
 #include "triangle.h"
 
+int screen_width = 0; // Global screen width
+int screen_height = 0; // Global screen height
+
 static void page_flip_handler(int fd, unsigned int frame,
                               unsigned int sec, unsigned int usec,
                               void *data)
@@ -28,6 +31,10 @@ static int init(struct drm *drm, struct render_context *ctx) {
         fprintf(stderr, "init_drm failed\n");
         return -1;
     }
+
+    // Retrieve screen dimensions from DRM mode
+    screen_width = drm->mode->hdisplay;
+    screen_height = drm->mode->vdisplay;
 
     if (setup_rendering(drm, ctx)) {
         fprintf(stderr, "setup_rendering failed\n");
@@ -46,6 +53,7 @@ static void draw(struct drm *drm, struct render_context *ctx, struct gbm_bo **pr
     draw_triangle();
     eglSwapBuffers(ctx->dpy, ctx->surf);
 
+    /* --- DRM page‑flip logic stays the same --- */
     struct gbm_bo *bo = gbm_surface_lock_front_buffer(ctx->gs);
     if (!bo) {
         fprintf(stderr, "gbm_surface_lock_front_buffer failed\n");
