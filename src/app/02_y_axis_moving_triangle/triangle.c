@@ -9,18 +9,29 @@ static GLuint triangle_program = 0;
 static GLuint triangle_vbo = 0;
 
 static const char *vertex_shader_src =
-    "attribute vec3 a_normal;\n"
+    "uniform float u_y_offset;\n"
+    "attribute vec4 a_vertex;\n"
+
     "void main() {\n"
-    "    gl_Position = vec4(a_normal, 1.0);\n"
+    "    gl_Position = a_vertex + vec4(0.0, u_y_offset, 0.0, 0.0);\n"
     "}\n";
 
 static const char *fragment_shader_src =
     "precision mediump float;\n"
     "void main() {\n"
-    "    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+    "    gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
     "}\n";
 
+float yOffset = 0.0f;
+float ySpeed = 0.01f;
+int direction = 1;
 
+void update_y_offset() {
+    yOffset += ySpeed * direction;
+    if (yOffset > 0.5f || yOffset < -0.5f) {
+        direction *= -1; // Reverse direction when reaching bounds
+    }
+}
 int init_triangle() {
     GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader_src);
     if (0 == vertex_shader) {
@@ -63,18 +74,22 @@ int init_triangle() {
 
 void draw_triangle() {
 
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    update_y_offset(); // Update the yOffset before drawing
+
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(triangle_program);
-    glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
 
-    GLint posAttrib = glGetAttribLocation(triangle_program, "a_normal");
-    glEnableVertexAttribArray(posAttrib);
-    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    GLint yOffsetLocation = glGetUniformLocation(triangle_program, "u_y_offset");
+    glUniform1f(yOffsetLocation, yOffset);
+
+    GLint a_vertex_location = glGetAttribLocation(triangle_program, "a_vertex");
+    glBindBuffer(GL_ARRAY_BUFFER, triangle_vbo);
+    glEnableVertexAttribArray(a_vertex_location);
+    glVertexAttribPointer(a_vertex_location, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    glDisableVertexAttribArray(posAttrib);
-
+    glDisableVertexAttribArray(a_vertex_location);
 }
