@@ -1,0 +1,2 @@
+# Dual Texture Renderer
+Dual Texture Renderer (DTR) is a compact OpenGL ES 2.0 utility that first renders two animated triangles into separate framebuffer textures occupying the left and right halves of the render target, then composites these textures side by side into a third framebuffer, and finally displays the merged texture full‑screen—preserving each triangle’s animation while presenting them concurrently in a single output.
