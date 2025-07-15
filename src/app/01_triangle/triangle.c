@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GLES2/gl2.h>
-#include "triangle.h"
+#include "./triangle.h"
 #include "shader_utils.h"
+#include "../main.h" // Include screen_context definition
 
 // Store shader program and VBO as static variables
 static GLuint triangle_program = 0;
@@ -21,7 +22,7 @@ static const char *fragment_shader_src =
     "}\n";
 
 
-int init_triangle() {
+int init_triangle(struct screen_context *screen_ctx) {
     GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader_src);
     if (0 == vertex_shader) {
         fprintf(stderr, "Failed to compile vertex shader\n");
@@ -61,7 +62,7 @@ int init_triangle() {
     return 0;
 }
 
-void draw_triangle() {
+void draw_triangle(struct screen_context *screen_ctx) {
 
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -72,6 +73,8 @@ void draw_triangle() {
     GLint posAttrib = glGetAttribLocation(triangle_program, "a_normal");
     glEnableVertexAttribArray(posAttrib);
     glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+
+    glViewport(0, 0, screen_ctx->screen_width, screen_ctx->screen_height);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 

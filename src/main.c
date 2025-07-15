@@ -14,9 +14,7 @@
 #include "drm-common.h"
 #include "renderer.h"
 #include "triangle.h"
-
-int screen_width = 0; // Global screen width
-int screen_height = 0; // Global screen height
+#include "main.h" // Include screen_context definition
 
 static void page_flip_handler(int fd, unsigned int frame,
                               unsigned int sec, unsigned int usec,
@@ -26,15 +24,15 @@ static void page_flip_handler(int fd, unsigned int frame,
     *waiting_for_flip = 0;
 }
 
-static int init(struct drm *drm, struct render_context *ctx) {
+static int init(struct drm *drm, struct render_context *ctx, struct screen_context *screen_ctx) {
     if (init_drm(drm, "/dev/dri/card0")) {
         fprintf(stderr, "init_drm failed\n");
         return -1;
     }
 
     // Retrieve screen dimensions from DRM mode
-    screen_width = drm->mode->hdisplay;
-    screen_height = drm->mode->vdisplay;
+    screen_ctx->screen_width = drm->mode->hdisplay;
+    screen_ctx->screen_height = drm->mode->vdisplay;
 
     if (setup_rendering(drm, ctx)) {
         fprintf(stderr, "setup_rendering failed\n");
@@ -42,15 +40,15 @@ static int init(struct drm *drm, struct render_context *ctx) {
         return -1;
     }
 
-    if (init_triangle()) {
+    if (init_triangle(screen_ctx)) { // Pass screen context to init_triangle
         fprintf(stderr, "init_triangle failed\n");
         return -1;
     }
     return 0;
 }
 
-static void draw(struct drm *drm, struct render_context *ctx, struct gbm_bo **previous_bo, uint32_t *previous_fb) {
-    draw_triangle();
+static void draw(struct drm *drm, struct render_context *ctx, struct screen_context *screen_ctx, struct gbm_bo **previous_bo, uint32_t *previous_fb) {
+    draw_triangle(screen_ctx); // Pass screen context to draw_triangle
     eglSwapBuffers(ctx->dpy, ctx->surf);
 
     /* --- DRM page‑flip logic stays the same --- */
@@ -116,15 +114,16 @@ static void draw(struct drm *drm, struct render_context *ctx, struct gbm_bo **pr
 int main() {
     struct drm drm = {0};
     struct render_context ctx = {0};
+    struct screen_context screen_ctx = {0};
     struct gbm_bo *previous_bo = NULL;
     uint32_t previous_fb = 0;
 
-    if (init(&drm, &ctx)) {
+    if (init(&drm, &ctx, &screen_ctx)) {
         return -1;
     }
 
     while (1) {
-        draw(&drm, &ctx, &previous_bo, &previous_fb);
+        draw(&drm, &ctx, &screen_ctx, &previous_bo, &previous_fb);
         usleep(16000);
     }
 

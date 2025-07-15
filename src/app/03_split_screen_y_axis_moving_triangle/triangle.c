@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GLES2/gl2.h>
-#include "triangle.h"
+#include "./triangle.h"
 #include "shader_utils.h"
 
 // Declare screen dimensions as extern to use global variables from main.c
@@ -49,7 +49,7 @@ void update_y_offsets() {
     }
 }
 
-int init_triangle() {
+int init_triangle(struct screen_context *screen_ctx) {
     GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader_src);
     if (0 == vertex_shader) {
         fprintf(stderr, "Failed to compile vertex shader\n");
@@ -99,7 +99,7 @@ int init_triangle() {
     return 0;
 }
 
-void draw_triangle() {
+void draw_triangle(struct screen_context *screen_ctx) {
     update_y_offsets(); // Update both yOffsets before drawing
 
     glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
@@ -117,7 +117,7 @@ void draw_triangle() {
     glVertexAttribPointer(a_vertex_location, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
 
     // Draw the first triangle
-    glViewport(0, 0, screen_width / 2, screen_height); // Use half the screen width
+    glViewport(0, 0, screen_ctx->screen_width / 2, screen_ctx->screen_height); // Use half the screen width
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glDisableVertexAttribArray(a_vertex_location);
@@ -129,7 +129,7 @@ void draw_triangle() {
     glEnableVertexAttribArray(a_vertex_location);
     glVertexAttribPointer(a_vertex_location, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
 
-    glViewport(screen_width / 2, 0, screen_width / 2, screen_height); // Use the other half
+    glViewport(screen_ctx->screen_width / 2, 0, screen_ctx->screen_width / 2, screen_ctx->screen_height); // Use the other half
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glDisableVertexAttribArray(a_vertex_location);
