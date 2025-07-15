@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -I/usr/include/libdrm -Isrc/common -Isrc/drm
+CFLAGS = -Wall -I/usr/include/libdrm -Isrc/common -Isrc/drm -Isrc/app/01_triangle -Isrc/common/shader_utils -I/usr/include/EGL -I/usr/include/GLES2
 LDFLAGS = -lEGL -lGLESv2 -lgbm -ldrm -lm
 
 TARGET = main
@@ -8,7 +8,7 @@ BUILD_DIR = build
 
 all: $(TARGET)
 
-$(TARGET): $(BUILD_DIR)/main.o $(BUILD_DIR)/renderer.o $(BUILD_DIR)/drm-common.o $(BUILD_DIR)/common.o
+$(TARGET): $(BUILD_DIR)/main.o $(BUILD_DIR)/renderer.o $(BUILD_DIR)/drm-common.o $(BUILD_DIR)/common.o $(BUILD_DIR)/triangle.o $(BUILD_DIR)/shader_utils.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(BUILD_DIR)/main.o: $(SRC_DIR)/main.c | $(BUILD_DIR)
@@ -21,6 +21,12 @@ $(BUILD_DIR)/drm-common.o: $(SRC_DIR)/drm/drm-common.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/common.o: $(SRC_DIR)/common/common.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/triangle.o: $(SRC_DIR)/app/01_triangle/triangle.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/shader_utils.o: $(SRC_DIR)/common/shader_utils/shader_utils.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR):

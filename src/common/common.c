@@ -331,29 +331,3 @@ int create_program(const char *vs_src, const char *fs_src)
 
 	return program;
 }
-
-int link_program(unsigned program)
-{
-	GLint ret;
-
-	glLinkProgram(program);
-
-	glGetProgramiv(program, GL_LINK_STATUS, &ret);
-	if (!ret) {
-		char *log;
-
-		printf("program linking failed!:\n");
-		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &ret);
-
-		if (ret > 1) {
-			log = malloc(ret);
-			glGetProgramInfoLog(program, ret, NULL, log);
-			printf("%s", log);
-			free(log);
-		}
-
-		return -1;
-	}
-
-	return 0;
-}

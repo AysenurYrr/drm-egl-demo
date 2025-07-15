@@ -13,6 +13,7 @@
 
 #include "drm-common.h"
 #include "renderer.h"
+#include "triangle.h"
 
 static void page_flip_handler(int fd, unsigned int frame,
                               unsigned int sec, unsigned int usec,
